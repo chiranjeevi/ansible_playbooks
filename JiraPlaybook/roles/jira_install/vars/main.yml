@@ -1,0 +1,15 @@
+
+---
+jdk8_download_url: http://download.oracle.com/otn-pub/java/jdk/8u171-b11/512cd62ec5174c3487ac17c61aaa89e8/jdk-8u171-linux-x64.rpm
+download_folder: /opt
+java_name: "{{download_folder}}/jdk1.8.0"
+java_archive: "{{download_folder}}/jdk-8u171-linux-x64.rpm"
+jira_download_url: https://www.atlassian.com/software/jira/downloads/binary/atlassian-jira-software-7.10.2.tar.gz
+jira_archive: "{{download_folder}}/atlassian-jira-software-7.10.2.tar.gz"
+jira_space: "/opt/jirasoftware"
+jira_install_path: "{{jira_space}}/jira_install"
+jira_home_dir: "{{jira_space}}/jirasoftware-home"
+jira_config_file: "{{jira_install_path}}/atlassian-jira/WEB-INF/classes/jira-application.properties"
+jira_server_config: "{{jira_install_path}}/conf/server.xml"
+jira_connector_port: 8081
+jira_server_port: 8006

@@ -1,0 +1,14 @@
+
+---
+- name: stop jira
+  command: "sh {{jira_install_path}}/bin/stop-jira.sh"
+  become: true
+  become_user: jira
+  when: "'running' in command_result.stdout"
+
+- name: start jira
+  command: "sh {{jira_install_path}}/bin/start-jira.sh"
+  become: true
+  become_user: jira
+  when: "'stopped' in command_result.stdout"
+

@@ -1,0 +1,128 @@
+---
+- name: Setup vars
+  set_fact:
+    java_installed: false
+  notify:
+    - stop jira
+
+
+- name: Install pre-reques
+  yum: name={{ item }} state=latest
+  with_items:
+   - wget
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+
+- name: Check if java is installed
+  command: java -version
+  register: java_result
+  ignore_errors: True
+
+- name: Check jdk.rpm downloaded
+  command: ls /opt/jdk-8u171-linux-x64.rpm
+  register: file_exist
+  ignore_errors: True
+
+
+- name: Add the user 'jira' with a bash shell, appending the group 'jira' to the user's groups
+  user:
+    name: jira
+    shell: /bin/bash
+    groups: root
+    append: yes
+
+- name: Download Java
+  command: "wget -q -O {{java_archive}} --no-cookies --no-check-certificate --header 'Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie' {{jdk8_download_url}}"
+  when:
+    java_result is failed and file_exist is failed 
+
+- name: Install Java8 rpm file 
+  yum:
+     name: "{{java_archive}}"
+     state: present
+
+  # --------------------Install JIRA -------------------------------
+
+- name: Download JIRA
+  get_url:
+    url: "{{jira_download_url}}"
+    dest: "{{jira_archive}}"
+
+- name: Check {{jira_space}} directory exists.
+  stat:
+    path: "{{jira_space}}"
+  register: jiraDir
+
+- name: stop jira process if anything running
+  shell: ps -aef | grep "jirasoftware/jira_install/bin" | grep -v grep > null && echo running || echo stopped 
+  register: command_result
+  become: true
+  become_user: jira
+
+- name: stop jira
+  shell: "sh {{jira_install_path}}/bin/stop-jira.sh"
+  become: true
+  become_user: jira
+  when: "'running' in command_result.stdout"
+
+- pause:
+
+- name: backing up existing {{jira_space}} if it exist
+  archive: 
+    path: "{{jira_space}}"
+    dest: "{{download_folder}}/jira_{{ansible_date_time.date}}.tgz"
+  become: true
+  become_user: root
+  when: jiraDir.stat.exists and jiraDir.stat.isdir
+
+- file: path="{{jira_space}}" state=absent
+  when: jiraDir.stat.exists and jiraDir.stat.isdir
+
+- file: path="{{jira_space}}" state=directory 
+- file: path="{{jira_home_dir}}" state=directory
+
+- name: Extract JIRA tar file Installation directory
+  unarchive:
+    src: "{{jira_archive}}"
+    dest: "{{jira_space}}"
+
+- shell: mv {{jira_space}}/atlassian-* {{jira_install_path}}
+  become: true
+  become_user: root
+
+- name: Assign jira user to installation dir
+  file: dest={{jira_install_path}} owner=jira mode=u=rwx,g=rx recurse=yes 
+  
+- name: Assign jira user to jira_home dir {{jira_home_dir}}
+  file: dest={{jira_home_dir}} owner=jira mode=u=rwx,g=rx recurse=yes
+  
+- name: Update the jira home in {{jira_config_file}}
+  replace:
+    path: "{{jira_config_file}}"
+    regexp: 'jira.home.*'
+    replace: 'jira.home = {{jira_home_dir}}' 
+    backup: yes
+
+- name: Update the {{jira_connector_port}} port in conf/server.xml
+  replace:
+     path: "{{jira_server_config}}"
+     regexp: '8080'
+     replace: '{{jira_connector_port}}'
+     backup: yes
+- name: Update the {{jira_server_port}} port in conf/server.xml
+  replace:
+    path: "{{jira_server_config}}"
+    regexp: '8005'
+    replace: '{{jira_server_port}}'
+    backup: yes
+
+- name: Start/Restart Jira
+  shell: ps -aef | grep "jirasoftware/jira_install/bin" | grep -v grep > null && echo yes running || echo stopped
+  register: command_result
+  become: true
+  become_user: jira
+  notify: 
+    - stop jira
+    - start jira
+
+ 

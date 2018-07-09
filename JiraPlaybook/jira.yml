@@ -1,0 +1,10 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  roles:
+  - {role: 'jira_install', tags: 'jira_install'}
+
+  - {role: 'mysql_install', tags: 'mysql_install', become: 'yes'}
+#- import_playbook: jira_setup.yml
+#- import_playbook: db_setup.yml 

@@ -5,6 +5,6 @@
   roles:
   - {role: 'jira_install', tags: 'jira_install'}
 
-  - {role: 'mysql_install', tags: 'mysql_install', become: 'yes'}
+#  - {role: 'mysql_install', tags: 'mysql_install'}
 #- import_playbook: jira_setup.yml
 #- import_playbook: db_setup.yml 
